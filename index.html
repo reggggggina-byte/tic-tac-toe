@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Крестики-нолики онлайн</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --cell: min(24vw, 110px); }
+  * { box-sizing: border-box; margin: 0; font-family: system-ui, sans-serif; }
+  body {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #eee; gap: 14px; padding: 16px;
+  }
+  h1 { font-size: 1.4em; }
+  .status { min-height: 1.5em; font-size: 1.1em; text-align: center; }
+  .board {
+    display: grid; grid-template-columns: repeat(3, var(--cell)); grid-auto-rows: var(--cell);
+    gap: 6px; border: 2px solid #e94560; border-radius: 12px; padding: 6px;
+  }
+  .cell {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--cell) * .55); font-weight: bold; cursor: pointer;
+    user-select: none; transition: background .15s;
+  }
+  .cell:hover { background: rgba(255,255,255,.14); }
+  .cell.x { color: #e94560; } .cell.o { color: #4ade80; }
+  .cell.win { background: rgba(233,69,96,.35); }
+  button {
+    padding: 10px 22px; border: none; border-radius: 8px; background: #e94560;
+    color: #fff; font-size: 1em; cursor: pointer;
+  }
+  button:hover { filter: brightness(1.1); }
+  #link { max-width: 90vw; font-size: .8em; opacity: .7; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+  <h1>✕ Крестики-нолики ⭕</h1>
+  <div class="status" id="status">Загрузка…</div>
+  <div class="board" id="board"></div>
+  <button onclick="newGame()">Новая игра</button>
+  <div id="link"></div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC6E6NkQ8wr3SjZJmtWLqgnbwAFukDqfDg",
+  authDomain: "regina-10159.firebaseapp.com",
+  databaseURL: "https://regina-10159-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "regina-10159",
+  storageBucket: "regina-10159.firebasestorage.app",
+  messagingSenderId: "135727435934",
+  appId: "1:135727435934:web:474051f773d864ab1eeb8f"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const winnerLines = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+// --- идентификатор игрока и роль ---
+const url = new URL(location.href);
+let roomId = url.searchParams.get("room");
+const myId = Math.random().toString(36).slice(2);
+let myRole = null; // 'host' | 'guest'
+
+const statusEl = document.getElementById("status");
+const boardEl = document.getElementById("board");
+const cells = [];
+
+for (let i = 0; i < 9; i++) {
+  const c = document.createElement("div");
+  c.className = "cell";
+  c.onclick = () => move(i);
+  boardEl.appendChild(c);
+  cells.push(c);
+}
+
+async function join() {
+  if (!roomId) {
+    roomId = Math.random().toString(36).slice(2, 10);
+    history.replaceState(null, "", "?room=" + roomId);
+  }
+  const ref = db.ref("games/" + roomId);
+  const snap = await ref.get();
+
+  if (!snap.exists()) {
+    // первый игрок — создаём игру, он играет крестиками
+    await ref.set({ board: Array(9).fill(""), turn: "X", started: Date.now() });
+    myRole = "host";
+  } else if (snap.child("players").exists() &&
+             snap.child("players/guest").exists()) {
+    statusEl.textContent = "Комната уже занята: в игре два игрока 🙂";
+    return;
+  } else {
+    await ref.child("players/guest").set(myId);
+    myRole = "guest";
+  }
+
+  const link = location.href;
+  document.getElementById("link").textContent = "Ссылка для друга: " + link;
+  // дублируем ссылку — на всякий случай, вдруг получатель запутается
+  document.title = "Комната " + roomId;
+
+  ref.on("value", onState);
+}
+
+function onState(snap) {
+  const g = snap.val();
+  if (!g) return;
+  const board = Array.isArray(g.board) ? g.board : Array(9).fill("");
+  const winner = getWinner(board);
+
+  cells.forEach((c, i) => {
+    c.textContent = board[i];
+    c.className = "cell" + (board[i] === "X" ? " x" : board[i] === "O" ? " o" : "")
+                + (winner && winner.line.includes(i) ? " win" : "");
+    const occupied = board[i] !== "";
+    const notMyTurn = !myRole || (g.turn !== symbol());
+    c.style.cursor = (occupied || notMyTurn || winner || c.classList.contains("win"))
+      ? "default" : "pointer";
+  });
+
+  if (winner) {
+    statusEl.textContent = winner.who === "draw"
+      ? "Ничья! Сыграем ещё раз?"
+      : `Победил: ${winner.who === "X" ? "✕ крестики" : "⭕ нолики"}! 🎉`;
+  } else if (!myRole) {
+    statusEl.textContent = "Подключение…";
+  } else {
+    statusEl.textContent = `Вы — ${symbol() === "X" ? "✕" : "⭕"}. ` +
+      (g.turn === symbol() ? "Ваш ход" : "Ход соперника…");
+  }
+}
+
+function symbol() {
+  return myRole === "host" ? "X" : "O";
+}
+
+function getWinner(board) {
+  for (const [a, b, c] of winnerLines) {
+    if (board[a] && board[a] === board[b] && board[a] === board[c])
+      return { who: board[a], line: [a, b, c] };
+  }
+  if (board.every(Boolean)) return { who: "draw", line: [] };
+  return null;
+}
+
+function move(i) {
+  if (!myRole) return;
+  const ref = db.ref("games/" + roomId);
+  ref.get().then(snap => {
+    const g = snap.val();
+    if (!g) return;
+    const board = Array.isArray(g.board) ? g.board : Array(9).fill("");
+    if (board[i] !== "" || g.turn !== symbol()) return;
+    if (getWinner(board)) return;
+    board[i] = g.turn;
+    const w = getWinner(board);
+    const upd = { board, turn: w ? g.turn : (g.turn === "X" ? "O" : "X") };
+    ref.update(upd);
+  });
+}
+
+function newGame() {
+  db.ref("games/" + roomId).update({
+    board: Array(9).fill(""), turn: "X", players: null
+  });
+}
+
+join();
+</script>
+</body>
+</html>
