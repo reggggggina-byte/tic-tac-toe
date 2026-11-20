@@ -54,4 +54,544 @@
   .pick-symbol button.selected { background: #e94560; transform: scale(1.08); }
 
   /* --- панель рисования --- */
-  #doodleBox
+  #doodleBox {
+    position: relative; border: 2px solid rgba(255,255,255,.2);
+    border-radius: 12px; background: rgba(255,255,255,.04); overflow: hidden;
+  }
+  #doodleCanvas { width: 100%; height: auto; display: block; touch-action: none; cursor: crosshair; }
+  #doodleTools { padding: 8px; display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,.3); }
+  #doodleTools button { padding: 6px 14px; font-size: .9em; }
+  #penColor { width: 32px; height: 32px; border: none; border-radius: 8px; cursor: pointer; }
+  #doodleTools span { font-size: .8em; color: #aaa; }
+
+  /* --- чат --- */
+  .chat-container {
+    display: flex; flex-direction: column; height: 480px;
+    border: 1px solid rgba(255,255,255,.15); border-radius: 12px;
+    background: rgba(255,255,255,.04);
+  }
+  .chat-messages { flex: 1; padding: 12px; overflow-y: auto; min-height: 150px;
+    display: flex; flex-direction: column; gap: 6px; }
+  .msg { padding: 6px 10px; border-radius: 8px; font-size: .9em; max-width: 85%; word-break: break-word; }
+  .msg .nick { font-weight: 700; margin-right: 6px; }
+  .msg.me { align-self: flex-end; background: #e94560; color: #fff; }
+  .msg.opp { align-self: flex-start; background: rgba(255,255,255,.1); color: #eee; }
+  .chat-input { display: flex; gap: 8px; padding: 8px; }
+  .chat-input input { flex: 1; padding: 8px; border: none; border-radius: 8px;
+    background: rgba(255,255,255,.06); color: #eee; outline: none; }
+  .chat-input button { background: #4ade80; color: #10231a; padding: 8px 16px; }
+
+  /* --- кошка --- */
+  #catWrap { position: fixed; bottom: 20px; left: 20px; z-index: 10; }
+  #cat { cursor: pointer; user-select: none; display: block; }
+  #catBody { transform-box: view-box; transform-origin: 85px 55px; transition: transform .5s; }
+  #cat.angry #catBody { transform: scaleX(-1); animation: shake .3s infinite; }
+  @keyframes shake {
+    0%, 100% { transform: scaleX(-1) rotate(0deg); }
+    50%      { transform: scaleX(-1) rotate(3deg); }
+  }
+  .brow, #angryMouth, #winkLineL, #winkLineR { visibility: hidden; }
+  #cat.angry .brow, #cat.angry #angryMouth { visibility: visible; }
+  #cat.angry .pupil { fill: #ff5252; }
+  #cat.wink-left  #eyeL { visibility: hidden; }
+  #cat.wink-left  #winkLineL { visibility: visible; }
+  #cat.wink-right #eyeR { visibility: hidden; }
+  #cat.wink-right #winkLineR { visibility: visible; }
+  .heart, .anger {
+    position: absolute; font-size: 20px; pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+  }
+  @keyframes floatUp {
+    from { opacity: 1; transform: translateY(0) scale(.5) rotate(0deg); }
+    to   { opacity: 0; transform: translateY(-70px) scale(1.4) rotate(15deg); }
+  }
+</style>
+</head>
+<body>
+  <h1>✕ Крестики-нолики ⭕</h1>
+
+  <!-- экран входа: ник и значок -->
+  <div id="setup">
+    <input type="text" id="nickInput" placeholder="Ваш никнейм" maxlength="20">
+    <div class="pick-symbol">
+      <button id="btnX" onclick="selectSymbol('X')">✕</button>
+      <button id="btnO" onclick="selectSymbol('O')">⭕</button>
+    </div>
+    <button id="playBtn">Играть</button>
+  </div>
+
+  <!-- игра: слева доска и рисование, справа чат -->
+  <div id="game" style="display:none; width:100%; max-width:1000px;">
+    <div style="display:grid; grid-template-columns:1fr 320px; gap:16px; align-items:start;">
+
+      <!-- ЛЕВАЯ колонка -->
+      <div style="display:flex; flex-direction:column; gap:14px; align-items:center;">
+        <div id="playersLine"></div>
+        <div class="status" id="status">Подключение…</div>
+        <div class="board" id="board"></div>
+        <button onclick="newGame()">Новая игра</button>
+
+        <!-- общая панель рисования -->
+        <div id="doodleBox" style="width:100%; max-width:520px;">
+          <canvas id="doodleCanvas" width="500" height="260"></canvas>
+          <div id="doodleTools">
+            <input type="color" id="penColor" value="#4ade80" title="Цвет карандаша">
+            <button onclick="clearDoodle()">Стереть всё</button>
+            <span>Рисуют все вместе</span>
+          </div>
+        </div>
+
+        <div id="link"></div>
+      </div>
+
+      <!-- ПРАВАЯ колонка: чат -->
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="Сообщение…" maxlength="200">
+          <button onclick="sendChat()">Отправить</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- кошка -->
+  <div id="catWrap">
+    <svg id="cat" width="170" height="130" viewBox="0 0 170 130">
+      <g id="catBody">
+        <!-- хвост: свёрнут калачиком -->
+        <path id="tail" d="M118,85 Q156,92 154,108" stroke="#111" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <!-- уши -->
+        <polygon points="35,35 48,5 62,32" fill="#111"/>
+        <polygon points="115,35 102,5 88,32" fill="#111"/>
+        <!-- голова -->
+        <ellipse cx="85" cy="55" rx="45" ry="40" fill="#111"/>
+        <!-- глаза -->
+        <g id="eyeL">
+          <circle cx="65" cy="50" r="13" fill="#fff"/>
+          <circle class="pupil" cx="65" cy="50" r="5.5" fill="#ffd54a"/>
+        </g>
+        <g id="eyeR">
+          <circle cx="105" cy="50" r="13" fill="#fff"/>
+          <circle class="pupil" cx="105" cy="50" r="5.5" fill="#ffd54a"/>
+        </g>
+        <!-- закрытые глаза (по одному на каждую сторону) -->
+        <path id="winkLineL" d="M58,50 q7,6 14,0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path id="winkLineR" d="M98,50 q7,6 14,0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- сердитые брови и рот -->
+        <line class="brow" x1="55" y1="35" x2="74" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
+        <line class="brow" x1="115" y1="35" x2="96" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
+        <path id="angryMouth" d="M73,78 L79,73 L85,78 L91,73 L97,78" stroke="#e94560" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- нос и усы -->
+        <polygon points="85,66 80,72 90,72" fill="#e94560"/>
+        <line x1="72" y1="72" x2="30" y2="66" stroke="#999" stroke-width="1.5"/>
+        <line x1="72" y1="76" x2="32" y2="80" stroke="#999" stroke-width="1.5"/>
+        <line x1="98" y1="72" x2="140" y2="66" stroke="#999" stroke-width="1.5"/>
+        <line x1="98" y1="76" x2="138" y2="80" stroke="#999" stroke-width="1.5"/>
+      </g>
+    </svg>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC6E6NkQ8wr3SjZJmtWLqgnbwAFukDqfDg",
+  authDomain: "regina-10159.firebaseapp.com",
+  databaseURL: "https://regina-10159-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "regina-10159",
+  storageBucket: "regina-10159.firebasestorage.app",
+  messagingSenderId: "135727435934",
+  appId: "1:135727435934:web:474051f773d864ab1eeb8f"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const winnerLines = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+const url = new URL(location.href);
+let roomId = url.searchParams.get("room");
+const myId = Math.random().toString(36).slice(2);
+let myRole = null;      // 'host' | 'guest'
+let mySymbol = null;    // 'X' | 'O'
+let myNick = "";
+
+const statusEl = document.getElementById("status");
+const boardEl = document.getElementById("board");
+const cells = [];
+for (let i = 0; i < 9; i++) {
+  const c = document.createElement("div");
+  c.className = "cell";
+  c.onclick = () => move(i);
+  boardEl.appendChild(c);
+  cells.push(c);
+}
+
+/* ---------- экран входа ---------- */
+function selectSymbol(sym) {
+  mySymbol = sym;
+  localStorage.setItem("symbol", sym);
+  document.getElementById("btnX").classList.toggle("selected", sym === "X");
+  document.getElementById("btnO").classList.toggle("selected", sym === "O");
+}
+
+document.getElementById("playBtn").onclick = () => {
+  const nick = document.getElementById("nickInput").value.trim();
+  if (!mySymbol) { statusEl.textContent = "Сначала выберите значок ✕ или ⭕"; return; }
+  myNick = nick || "Игрок";
+  localStorage.setItem("nick", myNick);
+  document.getElementById("setup").style.display = "none";
+  document.getElementById("game").style.display = "block";
+  join();
+};
+
+(function restore() {
+  const savedNick = localStorage.getItem("nick");
+  if (savedNick) document.getElementById("nickInput").value = savedNick;
+  const savedSym = localStorage.getItem("symbol");
+  if (savedSym) selectSymbol(savedSym);
+})();
+
+/* ---------- подключение к комнате ---------- */
+async function join() {
+  if (!roomId) {
+    roomId = Math.random().toString(36).slice(2, 10);
+    history.replaceState(null, "", "?room=" + roomId);
+  }
+  const ref = db.ref("games/" + roomId);
+  let snap;
+  try {
+    snap = await ref.get();
+  } catch (e) {
+    statusEl.textContent = "Ошибка подключения: " + e.code + " — " + e.message;
+    console.error(e);
+    return;
+  }
+
+  if (!snap.exists()) {
+    try {
+      await ref.set({
+        board: ["","","","","","","","",""],
+        turn: "X",
+        started: Date.now(),
+        players: { host: { id: myId, nick: myNick, symbol: mySymbol } }
+      });
+    } catch (e) {
+      statusEl.textContent = "Не удалось создать игру: " + e.code;
+      console.error(e);
+      return;
+    }
+    myRole = "host";
+  } else {
+    const players = snap.val().players || {};
+    const host = players.host || {};
+    const guest = players.guest || {};
+    if (host.id && host.id !== myId && guest.id && guest.id !== myId) {
+      statusEl.textContent = "Комната уже занята: в игре два игрока 🙂";
+      return;
+    }
+    if (!host.id) {
+      let sym = mySymbol;
+      if (guest.symbol === sym) sym = sym === "X" ? "O" : "X";
+      await ref.child("players/host").set({ id: myId, nick: myNick, symbol: sym });
+      mySymbol = sym;
+      myRole = "host";
+    } else if (!guest.id) {
+      let sym = mySymbol;
+      if (host.symbol === sym) sym = sym === "X" ? "O" : "X";
+      await ref.child("players/guest").set({ id: myId, nick: myNick, symbol: sym });
+      mySymbol = sym;
+      myRole = "guest";
+    } else {
+      myRole = (host.id === myId) ? "host" : "guest";
+    }
+  }
+  localStorage.setItem("symbol", mySymbol);
+
+  document.getElementById("link").textContent = "Ссылка для друга: " + location.href;
+  document.title = "Комната " + roomId;
+  ref.on("value", onState);
+}
+
+/* ---------- отрисовка состояния ---------- */
+function onState(snap) {
+  const g = snap.val();
+  if (!g) return;
+
+  // доска
+  const board = Array.isArray(g.board) ? g.board : ["","","","","","","","",""];
+  const winner = getWinner(board);
+  cells.forEach((c, i) => {
+    c.textContent = board[i];
+    c.className = "cell" + (board[i] === "X" ? " x" : board[i] === "O" ? " o" : "")
+                + (winner && winner.line.includes(i) ? " win" : "");
+    const busy = board[i] !== "" || winner;
+    c.style.cursor = (busy || !myRole || g.turn !== mySymbol) ? "default" : "pointer";
+  });
+
+  // строка игроков
+  const p = g.players || {};
+  const host = p.host || {};
+  const guest = p.guest || {};
+  const me  = (myRole === "host") ? host : guest;
+  const opp = (myRole === "host") ? guest : host;
+  const line = [];
+  if (me.nick)  line.push((me.symbol === "X" ? "✕ " : "⭕ ") + me.nick);
+  if (opp.nick) line.push((opp.symbol === "X" ? "✕ " : "⭕ ") + opp.nick);
+  document.getElementById("playersLine").textContent = line.join("   ·   ");
+
+  if (winner) {
+    statusEl.textContent = winner.who === "draw"
+      ? "Ничья! Сыграем ещё раз?"
+      : (winner.who === "X" ? "Победили крестики! 🎉" : "Победили нолики! 🎉");
+  } else if (g.turn === mySymbol) {
+    statusEl.textContent = "Ваш ход";
+  } else {
+    statusEl.textContent = "Ход соперника…";
+  }
+
+  // общая панель рисования: сохранённые штрихи + незаконченные линии всех игроков
+  const d = g.doodle || {};
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  toList(d.strokes).forEach(s => drawStroke(ctx, s));
+  toList(d.live).forEach(s => drawStroke(ctx, s));
+
+  // чат
+  const chatEl = document.getElementById("chatMessages");
+  chatEl.innerHTML = "";
+  toList(g.chat).forEach(m => {
+    const div = document.createElement("div");
+    div.className = "msg " + (m.id === myId ? "me" : "opp");
+    const nick = document.createElement("span");
+    nick.className = "nick";
+    nick.textContent = (m.nick || "Игрок") + ":";
+    div.appendChild(nick);
+    div.appendChild(document.createTextNode(m.text));
+    chatEl.appendChild(div);
+  });
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function toList(v) {
+  if (!v) return [];
+  return Array.isArray(v) ? v.filter(Boolean) : Object.values(v);
+}
+
+function drawStroke(ctx, s) {
+  if (!s || !s.pts) return;
+  const pts = toList(s.pts);
+  if (!pts.length) return;
+  ctx.strokeStyle = s.color || "#4ade80";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  if (pts.length === 1) ctx.lineTo(pts[0].x + 0.1, pts[0].y);
+  ctx.stroke();
+}
+
+function getWinner(board) {
+  for (const trio of winnerLines) {
+    const a = trio[0], b = trio[1], c = trio[2];
+    if (board[a] && board[a] === board[b] && board[a] === board[c])
+      return { who: board[a], line: trio };
+  }
+  if (board.every(Boolean)) return { who: "draw", line: [] };
+  return null;
+}
+
+function move(i) {
+  if (!myRole) return;
+  const ref = db.ref("games/" + roomId);
+  ref.get().then(snap => {
+    const g = snap.val();
+    if (!g) return;
+    const board = Array.isArray(g.board) ? g.board : ["","","","","","","","",""];
+    if (board[i] !== "" || g.turn !== mySymbol) return;
+    if (getWinner(board)) return;
+    board[i] = g.turn;
+    const w = getWinner(board);
+    ref.update({ board, turn: w ? g.turn : (g.turn === "X" ? "O" : "X") });
+  });
+}
+
+function newGame() {
+  db.ref("games/" + roomId).update({
+    board: ["","","","","","","","",""],
+    turn: "X"
+  });
+}
+
+/* ---------- общая панель рисования ---------- */
+const canvas = document.getElementById("doodleCanvas");
+const ctx = canvas.getContext("2d");
+const penColor = document.getElementById("penColor");
+let drawing = false;
+let currentPath = [];
+
+function myKey() { return myRole || "guest"; }
+function liveRef() { return db.ref("games/" + roomId + "/doodle/live/" + myKey()); }
+function strokesRef() { return db.ref("games/" + roomId + "/doodle/strokes"); }
+
+function doodlePos(e) {
+  const r = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return [
+    (t.clientX - r.left) * (canvas.width / r.width),
+    (t.clientY - r.top) * (canvas.height / r.height)
+  ];
+}
+
+function doodleStart(e) {
+  e.preventDefault();
+  if (!myRole) return;
+  drawing = true;
+  const p = doodlePos(e);
+  currentPath = [{ x: p[0], y: p[1] }];
+}
+
+function doodleMove(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const p = doodlePos(e);
+  currentPath.push({ x: p[0], y: p[1] });
+
+  // рисуем локально — чтобы линия была плавной без ожидания базы
+  const prev = currentPath[currentPath.length - 2];
+  ctx.strokeStyle = penColor.value;
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(prev.x, prev.y);
+  ctx.lineTo(p[0], p[1]);
+  ctx.stroke();
+
+  // каждые 5 точек показываем сопернику «живую» линию
+  if (currentPath.length % 5 === 0) {
+    liveRef().set({ color: penColor.value, pts: currentPath });
+  }
+}
+
+function doodleEnd() {
+  if (drawing && currentPath.length) {
+    // штрих сохраняется навсегда — рисунок больше не пропадает
+    strokesRef().push({ color: penColor.value, pts: currentPath });
+    liveRef().set(null);
+  }
+  drawing = false;
+  currentPath = [];
+}
+
+canvas.addEventListener("mousedown", doodleStart);
+canvas.addEventListener("mousemove", doodleMove);
+canvas.addEventListener("mouseup", doodleEnd);
+canvas.addEventListener("mouseleave", doodleEnd);
+canvas.addEventListener("touchstart", doodleStart);
+canvas.addEventListener("touchmove", doodleMove);
+canvas.addEventListener("touchend", doodleEnd);
+
+function clearDoodle() {
+  db.ref("games/" + roomId + "/doodle").set(null);
+}
+
+/* ---------- чат ---------- */
+function sendChat() {
+  const input = document.getElementById("chatInput");
+  const text = input.value.trim();
+  if (!text || !roomId) return;
+  db.ref("games/" + roomId + "/chat").push({ id: myId, nick: myNick, text });
+  input.value = "";
+}
+document.getElementById("chatInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendChat();
+});
+
+/* ---------- кошка ---------- */
+const cat = document.getElementById("cat");
+const catWrap = document.getElementById("catWrap");
+const pupilL = document.querySelector("#eyeL .pupil");
+const pupilR = document.querySelector("#eyeR .pupil");
+const MAX = 6;
+let petCount = 0;
+let angryUntil = 0;
+let winkSide = "left";
+
+function spawnEmoji(cls, emoji, count) {
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement("div");
+    el.className = cls;
+    el.textContent = emoji;
+    el.style.left = (85 + (Math.random() * 130 - 65)) + "px";
+    el.style.top = (10 + Math.random() * 40) + "px";
+    el.style.animationDelay = (Math.random() * 0.3) + "s";
+    catWrap.appendChild(el);
+    setTimeout(() => el.remove(), 1600);
+  }
+}
+
+function wink() {
+  const cls = "wink-" + winkSide;
+  cat.classList.add(cls);
+  setTimeout(() => cat.classList.remove(cls), 700);
+  winkSide = (winkSide === "left") ? "right" : "left";
+}
+
+cat.addEventListener("click", () => {
+  if (Date.now() < angryUntil) return;
+  petCount++;
+  if (petCount < 3) {
+    wink();
+    spawnEmoji("heart", "❤️", 5);
+  } else {
+    angryUntil = Date.now() + 5000;
+    petCount = 0;
+    cat.classList.add("angry");
+    document.getElementById("tail").setAttribute("d", "M128,60 Q168,45 156,10");
+    spawnEmoji("anger", "💢", 6);
+    setTimeout(() => {
+      cat.classList.remove("angry");
+      document.getElementById("tail").setAttribute("d", "M118,85 Q156,92 154,108");
+    }, 5000);
+  }
+});
+
+// зрачки следят за курсором; на телефоне бродят сами
+document.addEventListener("mousemove", e => {
+  const r = cat.getBoundingClientRect();
+  const eyes = [
+    { el: pupilL, fx: 65 / 170, fy: 50 / 130 },
+    { el: pupilR, fx: 105 / 170, fy: 50 / 130 }
+  ];
+  eyes.forEach(eye => {
+    const cx = r.left + r.width * eye.fx;
+    const cy = r.top + r.height * eye.fy;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const k = Math.min(MAX, dist / 20);
+    eye.el.setAttribute("transform", "translate(" + (dx / dist) * k + " " + (dy / dist) * k + ")");
+  });
+});
+
+let t = 0;
+setInterval(() => {
+  if (matchMedia("(hover: none)").matches) {
+    t += 0.15;
+    const px = Math.cos(t) * MAX;
+    const py = Math.sin(t * 1.3) * MAX * 0.5;
+    pupilL.setAttribute("transform", "translate(" + px + " " + py + ")");
+    pupilR.setAttribute("transform", "translate(" + px + " " + py + ")");
+  }
+}, 50);
+</script>
+</body>
+</html>
