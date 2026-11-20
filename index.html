@@ -15,7 +15,7 @@
   }
   h1 { font-size: 1.4em; }
   .status { min-height: 1.5em; font-size: 1.1em; text-align: center; }
-  #playersLine { font-size: .9em; opacity: .85; min-height: 1.2em; }
+  #playersLine { font-size: .9em; opacity: .85; min-height: 1.2em; text-align: center; }
   .board {
     display: grid; grid-template-columns: repeat(3, var(--cell)); grid-auto-rows: var(--cell);
     gap: 6px; border: 2px solid #e94560; border-radius: 12px; padding: 6px;
@@ -34,7 +34,7 @@
     color: #fff; font-size: 1em; cursor: pointer;
   }
   button:hover { filter: brightness(1.1); }
-  #link { max-width: 90vw; font-size: .8em; opacity: .7; word-break: break-all; }
+  #link { max-width: 90vw; font-size: .8em; opacity: .7; word-break: break-all; text-align: center; }
 
   /* --- экран входа --- */
   #setup {
@@ -86,7 +86,7 @@
   /* --- кошка --- */
   #catWrap { position: relative; }
   #cat { cursor: pointer; user-select: none; }
-  #catBody { transform-box: view-box; transform-origin: 75px 55px; transition: transform .5s; }
+  #catBody { transform-box: view-box; transform-origin: 85px 55px; transition: transform .5s; }
   #cat.angry #catBody { transform: scaleX(-1); animation: shake .3s infinite; }
   @keyframes shake {
     0%, 100% { transform: scaleX(-1) rotate(0deg); }
@@ -95,8 +95,8 @@
   .brow, #angryMouth, #winkLine { visibility: hidden; }
   #cat.angry .brow, #cat.angry #angryMouth { visibility: visible; }
   #cat.angry .pupil { fill: #ff5252; }
-  #cat.wink #eyeR { visibility: hidden; }
-  #cat.wink #winkLine { visibility: visible; }
+  #cat.wink-right #eyeR { visibility: hidden; }
+  #cat.wink-left  #eyeL { visibility: hidden; }
   .heart, .anger {
     position: absolute; font-size: 20px; pointer-events: none;
     animation: floatUp 1.2s ease-out forwards;
@@ -120,8 +120,8 @@
     <button id="playBtn">Играть</button>
   </div>
 
-  <!-- игровая часть (появится после входа) -->
-  <div id="game" style="display:none; display:none; flex-direction:column; align-items:center; gap:14px;">
+  <!-- игровая часть -->
+  <div id="game" style="display:none; flex-direction:column; align-items:center; gap:14px;">
     <div id="playersLine"></div>
     <div class="status" id="status">Подключение…</div>
     <div class="board" id="board"></div>
@@ -154,38 +154,32 @@
 
   <!-- кошка -->
   <div id="catWrap">
-    <svg id="cat" width="150" height="130" viewBox="0 0 170 130">
+    <svg id="cat" width="170" height="130" viewBox="0 0 170 130">
       <g id="catBody">
-        <!-- хвост (лежит спокойно, при злости поднимается) -->
         <path id="tail" d="M112,85 Q150,92 148,108" stroke="#111" stroke-width="9"
               fill="none" stroke-linecap="round"/>
-        <!-- уши -->
         <polygon points="35,35 48,5 62,32" fill="#111"/>
         <polygon points="115,35 102,5 88,32" fill="#111"/>
-        <!-- голова -->
-        <ellipse cx="75" cy="55" rx="45" ry="40" fill="#111"/>
-        <!-- глаза -->
+        <ellipse cx="85" cy="55" rx="45" ry="40" fill="#111"/>
         <g id="eyeL">
-          <circle cx="55" cy="50" r="13" fill="#fff"/>
-          <circle class="pupil" cx="55" cy="50" r="5.5" fill="#ffd54a"/>
+          <circle cx="65" cy="50" r="13" fill="#fff"/>
+          <circle class="pupil" cx="65" cy="50" r="5.5" fill="#ffd54a"/>
         </g>
         <g id="eyeR">
-          <circle cx="95" cy="50" r="13" fill="#fff"/>
-          <circle class="pupil" cx="95" cy="50" r="5.5" fill="#ffd54a"/>
+          <circle cx="105" cy="50" r="13" fill="#fff"/>
+          <circle class="pupil" cx="105" cy="50" r="5.5" fill="#ffd54a"/>
         </g>
-        <path id="winkLine" d="M88,50 q7,6 14,0" stroke="#fff" stroke-width="3"
+        <path id="winkLine" d="M98,50 q7,6 14,0" stroke="#fff" stroke-width="3"
               fill="none" stroke-linecap="round"/>
-        <!-- сердитые брови и рот (видны только в злости) -->
-        <line class="brow" x1="45" y1="35" x2="64" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
-        <line class="brow" x1="105" y1="35" x2="86" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
-        <path id="angryMouth" d="M63,78 L69,73 L75,78 L81,73 L87,78" stroke="#e94560"
+        <line class="brow" x1="55" y1="35" x2="74" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
+        <line class="brow" x1="115" y1="35" x2="96" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
+        <path id="angryMouth" d="M73,78 L79,73 L85,78 L91,73 L97,78" stroke="#e94560"
               stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <!-- нос и усы -->
-        <polygon points="75,66 70,72 80,72" fill="#e94560"/>
-        <line x1="62" y1="72" x2="20" y2="66" stroke="#999" stroke-width="1.5"/>
-        <line x1="62" y1="76" x2="22" y2="80" stroke="#999" stroke-width="1.5"/>
-        <line x1="88" y1="72" x2="130" y2="66" stroke="#999" stroke-width="1.5"/>
-        <line x1="88" y1="76" x2="128" y2="80" stroke="#999" stroke-width="1.5"/>
+        <polygon points="85,66 80,72 90,72" fill="#e94560"/>
+        <line x1="72" y1="72" x2="30" y2="66" stroke="#999" stroke-width="1.5"/>
+        <line x1="72" y1="76" x2="32" y2="80" stroke="#999" stroke-width="1.5"/>
+        <line x1="98" y1="72" x2="140" y2="66" stroke="#999" stroke-width="1.5"/>
+        <line x1="98" y1="76" x2="138" y2="80" stroke="#999" stroke-width="1.5"/>
       </g>
     </svg>
   </div>
@@ -232,6 +226,7 @@ for (let i = 0; i < 9; i++) {
 /* ---------- экран входа ---------- */
 function selectSymbol(sym) {
   mySymbol = sym;
+  localStorage.setItem("symbol", sym);
   document.getElementById("btnX").classList.toggle("selected", sym === "X");
   document.getElementById("btnO").classList.toggle("selected", sym === "O");
 }
@@ -241,15 +236,11 @@ document.getElementById("playBtn").onclick = () => {
   if (!mySymbol) { statusEl.textContent = "Сначала выберите значок ✕ или ⭕"; return; }
   myNick = nick || "Игрок";
   localStorage.setItem("nick", myNick);
-  document.getElementById("nickInput").value = localStorage.getItem("nick") || "";
-  if (localStorage.getItem("symbol")) selectSymbol(localStorage.getItem("symbol"));
   document.getElementById("setup").style.display = "none";
-  const g = document.getElementById("game");
-  g.style.display = "flex";
+  document.getElementById("game").style.display = "flex";
   join();
 };
 
-/* ник и значок запоминаем, чтобы не вводить заново */
 (function restore() {
   const savedNick = localStorage.getItem("nick");
   if (savedNick) document.getElementById("nickInput").value = savedNick;
@@ -293,14 +284,12 @@ async function join() {
       return;
     }
     if (!host.id) {
-      // занял место хоста
       let sym = mySymbol;
       if (guest.symbol === sym) sym = sym === "X" ? "O" : "X";
       await ref.child("players/host").set({ id: myId, nick: myNick, symbol: sym });
       mySymbol = sym;
       myRole = "host";
     } else if (!guest.id) {
-      // вхожу гостем; если значок занят — даю второй
       let sym = mySymbol;
       if (host.symbol === sym) sym = sym === "X" ? "O" : "X";
       await ref.child("players/guest").set({ id: myId, nick: myNick, symbol: sym });
@@ -336,10 +325,10 @@ function onState(snap) {
   // строка игроков
   const p = g.players || {};
   const host = p.host || {}, guest = p.guest || {};
-  const me = (myRole === "host") ? host : guest;
+  const me  = (myRole === "host") ? host : guest;
   const opp = (myRole === "host") ? guest : host;
   const line = [];
-  if (me.nick) line.push((me.symbol === "X" ? "✕ " : "⭕ ") + me.nick);
+  if (me.nick)  line.push((me.symbol === "X" ? "✕ " : "⭕ ") + me.nick);
   if (opp.nick) line.push((opp.symbol === "X" ? "✕ " : "⭕ ") + opp.nick);
   document.getElementById("playersLine").textContent = line.join("   ·   ");
   document.getElementById("myPanelTitle").textContent = "Рисунки: " + (me.nick || "я");
@@ -355,16 +344,24 @@ function onState(snap) {
     statusEl.textContent = "Ход соперника…";
   }
 
-  // рисунки
-  const d = g.doodle || {};
-  const mine = toList(d[myRole === "host" ? "host" : "guest"]);
-  const theirs = toList(d[myRole === "host" ? "guest" : "host"]);
-  const ctxMe = document.getElementById("doodleMe").getContext("2d");
-  const ctxOpp = document.getElementById("doodleOpp").getContext("2d");
-  ctxMe.clearRect(0, 0, 280, 160);
-  ctxOpp.clearRect(0, 0, 280, 160);
-  mine.forEach(s => drawStroke(ctxMe, s));
-  theirs.forEach(s => drawStroke(ctxOpp, s));
+  // рисунки: свои и соперника (включая «живую» незаконченную линию)
+  if (myRole) {
+    const d = g.doodle || {};
+    const myKey  = myRole;
+    const oppKey = myRole === "host" ? "guest" : "host";
+    const myD  = d[myKey]  || {};
+    const oppD = d[oppKey] || {};
+
+    const ctxMe  = document.getElementById("doodleMe").getContext("2d");
+    const ctxOpp = document.getElementById("doodleOpp").getContext("2d");
+    ctxMe.clearRect(0, 0, 280, 160);
+    ctxOpp.clearRect(0, 0, 280, 160);
+
+    toList(myD.strokes).forEach(s => drawStroke(ctxMe, s));
+    toList(oppD.strokes).forEach(s => drawStroke(ctxOpp, s));
+    // незаконченную линию рисуем только на панели соперника — своя и так видна
+    if (oppD.live) drawStroke(ctxOpp, oppD.live);
+  }
 
   // чат
   const chatEl = document.getElementById("chatMessages");
@@ -374,7 +371,7 @@ function onState(snap) {
     div.className = "msg " + (m.id === myId ? "me" : "opp");
     const nick = document.createElement("span");
     nick.className = "nick";
-    nick.textContent = m.nick || "Игрок";
+    nick.textContent = (m.nick || "Игрок") + ":";
     div.appendChild(nick);
     div.appendChild(document.createTextNode(m.text));
     chatEl.appendChild(div);
@@ -435,7 +432,7 @@ const penColor = document.getElementById("penColor");
 let drawing = false;
 let currentPath = [];
 
-function myKey() { return myRole === "host" ? "host" : "guest"; }
+function myKey() { return myRole || "guest"; }
 function doodleRef() { return db.ref("games/" + roomId + "/doodle/" + myKey()); }
 
 function doodlePos(e) {
@@ -446,6 +443,7 @@ function doodlePos(e) {
 }
 function doodleStart(e) {
   e.preventDefault();
+  if (!myRole) return;
   drawing = true;
   const [x, y] = doodlePos(e);
   currentPath = [{ x, y }];
@@ -505,14 +503,14 @@ const pupilR = document.querySelector("#eyeR .pupil");
 const MAX = 6;
 let petCount = 0;
 let angryUntil = 0;
-let winkSide = "R";
+let winkSide = "right";
 
 function spawnEmoji(cls, emoji, count) {
   for (let i = 0; i < count; i++) {
     const el = document.createElement("div");
     el.className = cls;
     el.textContent = emoji;
-    el.style.left = (75 + (Math.random() * 130 - 65)) + "px";
+    el.style.left = (85 + (Math.random() * 130 - 65)) + "px";
     el.style.top = (10 + Math.random() * 40) + "px";
     el.style.animationDelay = (Math.random() * .3) + "s";
     catWrap.appendChild(el);
@@ -521,34 +519,27 @@ function spawnEmoji(cls, emoji, count) {
 }
 
 function wink() {
-  // попеременно закрываем то один глаз, то другой
-  const side = winkSide;
-  cat.classList.add("wink");
-  if (side === "R") {
-    document.getElementById("winkLine").setAttribute("d", "M88,50 q7,6 14,0");
-  } else {
-    document.getElementById("winkLine").setAttribute("d", "M48,50 q7,6 14,0");
-  }
-  setTimeout(() => cat.classList.remove("wink"), 700);
-  winkSide = winkSide === "R" ? "L" : "R";
+  const cls = "wink-" + winkSide;
+  cat.classList.add(cls);
+  setTimeout(() => cat.classList.remove(cls), 700);
+  winkSide = winkSide === "right" ? "left" : "right";
 }
 
 cat.addEventListener("click", () => {
-  if (Date.now() < angryUntil) return;   // в злости поглаживания не принимаются
+  if (Date.now() < angryUntil) return;
   petCount++;
   if (petCount < 3) {
     wink();
     spawnEmoji("heart", "❤️", 5);
   } else {
-    // третий раз — злость: поднимаем хвост, переворачиваемся, краснеем
     angryUntil = Date.now() + 5000;
     petCount = 0;
     cat.classList.add("angry");
-    document.getElementById("tail").setAttribute("d", "M118,60 Q162,48 150,10");
+    document.getElementById("tail").setAttribute("d", "M128,60 Q172,48 160,10");
     spawnEmoji("anger", "💢", 6);
     setTimeout(() => {
       cat.classList.remove("angry");
-      document.getElementById("tail").setAttribute("d", "M112,85 Q150,92 148,108");
+      document.getElementById("tail").setAttribute("d", "M122,85 Q160,92 158,108");
     }, 5000);
   }
 });
@@ -557,8 +548,8 @@ cat.addEventListener("click", () => {
 document.addEventListener("mousemove", e => {
   const r = cat.getBoundingClientRect();
   const eyes = [
-    { el: pupilL, fx: 55 / 170, fy: 50 / 130 },
-    { el: pupilR, fx: 95 / 170, fy: 50 / 130 }
+    { el: pupilL, fx: 65 / 170, fy: 50 / 130 },
+    { el: pupilR, fx: 105 / 170, fy: 50 / 130 }
   ];
   eyes.forEach(({ el, fx, fy }) => {
     const cx = r.left + r.width * fx, cy = r.top + r.height * fy;
