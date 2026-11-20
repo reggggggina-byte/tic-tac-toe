@@ -1,116 +1,7 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<title>Крестики-нолики онлайн</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  :root { --cell: min(24vw, 110px); }
-  * { box-sizing: border-box; margin: 0; font-family: system-ui, sans-serif; }
-  body {
-    min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center;
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-    color: #eee; gap: 14px; padding: 16px;
-  }
-  h1 { font-size: 1.4em; }
-  .status { min-height: 1.5em; font-size: 1.1em; text-align: center; }
-  #playersLine { font-size: .9em; opacity: .85; min-height: 1.2em; text-align: center; }
-  .board {
-    display: grid; grid-template-columns: repeat(3, var(--cell)); grid-auto-rows: var(--cell);
-    gap: 6px; border: 2px solid #e94560; border-radius: 12px; padding: 6px;
-  }
-  .cell {
-    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
-    border-radius: 8px; display: flex; align-items: center; justify-content: center;
-    font-size: calc(var(--cell) * .55); font-weight: bold; cursor: pointer;
-    user-select: none; transition: background .15s;
-  }
-  .cell:hover { background: rgba(255,255,255,.14); }
-  .cell.x { color: #e94560; } .cell.o { color: #4ade80; }
-  .cell.win { background: rgba(233,69,96,.35); }
-  button {
-    padding: 10px 22px; border: none; border-radius: 8px; background: #e94560;
-    color: #fff; font-size: 1em; cursor: pointer;
-  }
-  button:hover { filter: brightness(1.1); }
-  #link { max-width: 90vw; font-size: .8em; opacity: .7; word-break: break-all; text-align: center; }
-
-  /* --- экран входа --- */
-  #setup {
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-    border: 1px solid rgba(255,255,255,.15); border-radius: 12px;
-    background: rgba(255,255,255,.04); padding: 16px;
-  }
-  #nickInput {
-    padding: 8px 12px; border: none; border-radius: 8px; outline: none;
-    background: rgba(255,255,255,.08); color: #eee; text-align: center;
-  }
-  .pick-symbol { display: flex; gap: 16px; }
-  .pick-symbol button {
-    width: 64px; height: 64px; font-size: 1.8em; border-radius: 12px;
-    background: rgba(255,255,255,.08);
-  }
-  .pick-symbol button.selected { background: #e94560; transform: scale(1.08); }
-
-  /* --- панели рисования --- */
-  .doodle-panels { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-  .doodle-panel { display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(280px, 48vw); }
-  .doodle-panel h3 { font-size: .95em; font-weight: 600; }
-  .doodle-panel canvas {
-    border: 2px solid rgba(255,255,255,.25); border-radius: 12px;
-    background: rgba(255,255,255,.05); width: 100%;
-  }
-  #doodleMe { cursor: crosshair; touch-action: none; }
-  #doodleTools { display: flex; gap: 8px; align-items: center; }
-  #doodleTools button { padding: 6px 14px; font-size: .9em; }
-  #penColor { width: 32px; height: 32px; border: none; border-radius: 8px; cursor: pointer; }
-
-  /* --- чат --- */
-  .chat-container {
-    display: flex; flex-direction: column; width: 100%; max-width: 560px;
-    border: 1px solid rgba(255,255,255,.15); border-radius: 12px;
-    background: rgba(255,255,255,.04);
-  }
-  .chat-messages { padding: 12px; overflow-y: auto; min-height: 150px; max-height: 220px;
-    display: flex; flex-direction: column; gap: 6px; }
-  .msg { padding: 6px 10px; border-radius: 8px; font-size: .9em; max-width: 80%; word-break: break-word; }
-  .msg .nick { font-weight: 700; margin-right: 6px; }
-  .msg.me { align-self: flex-end; background: #e94560; color: #fff; }
-  .msg.opp { align-self: flex-start; background: rgba(255,255,255,.1); color: #eee; }
-  .chat-input { display: flex; gap: 8px; padding: 8px; }
-  .chat-input input { flex: 1; padding: 8px; border: none; border-radius: 8px;
-    background: rgba(255,255,255,.06); color: #eee; outline: none; }
-  .chat-input button { background: #4ade80; color: #10231a; padding: 8px 16px; }
-
-  /* --- кошка --- */
-  #catWrap { position: relative; }
-  #cat { cursor: pointer; user-select: none; }
-  #catBody { transform-box: view-box; transform-origin: 85px 55px; transition: transform .5s; }
-  #cat.angry #catBody { transform: scaleX(-1); animation: shake .3s infinite; }
-  @keyframes shake {
-    0%, 100% { transform: scaleX(-1) rotate(0deg); }
-    50% { transform: scaleX(-1) rotate(3deg); }
-  }
-  .brow, #angryMouth, #winkLine { visibility: hidden; }
-  #cat.angry .brow, #cat.angry #angryMouth { visibility: visible; }
-  #cat.angry .pupil { fill: #ff5252; }
-  #cat.wink-right #eyeR { visibility: hidden; }
-  #cat.wink-left  #eyeL { visibility: hidden; }
-  .heart, .anger {
-    position: absolute; font-size: 20px; pointer-events: none;
-    animation: floatUp 1.2s ease-out forwards;
-  }
-  @keyframes floatUp {
-    from { opacity: 1; transform: translateY(0) scale(.5) rotate(0deg); }
-    to   { opacity: 0; transform: translateY(-70px) scale(1.4) rotate(15deg); }
-  }
-</style>
-</head>
 <body>
   <h1>✕ Крестики-нолики ⭕</h1>
 
-  <!-- экран входа: ник и значок -->
+  <!-- экран входа -->
   <div id="setup">
     <input type="text" id="nickInput" placeholder="Ваш никнейм" maxlength="20">
     <div class="pick-symbol">
@@ -120,47 +11,53 @@
     <button id="playBtn">Играть</button>
   </div>
 
-  <!-- игровая часть -->
-  <div id="game" style="display:none; flex-direction:column; align-items:center; gap:14px;">
-    <div id="playersLine"></div>
-    <div class="status" id="status">Подключение…</div>
-    <div class="board" id="board"></div>
-    <button onclick="newGame()">Новая игра</button>
-    <div id="link"></div>
+  <!-- основная сетка: слева игра, справа чат -->
+  <div id="game" style="display:none; width:100%; max-width:1000px; margin:0 auto;">
+    <div style="display:grid; grid-template-columns:1fr 320px; gap:16px; align-items:start;">
 
-    <div class="doodle-panels">
-      <div class="doodle-panel">
-        <h3 id="myPanelTitle">Мои рисунки</h3>
-        <canvas id="doodleMe" width="280" height="160"></canvas>
-        <div id="doodleTools">
-          <input type="color" id="penColor" value="#4ade80" title="Цвет карандаша">
-          <button onclick="clearDoodle()">Стереть всё</button>
+      <!-- ЛЕВАЯ КОЛОНКА: доска + рисование -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div id="playersLine" style="font-size:.9em; opacity:.8; text-align:center;"></div>
+        <div class="status" id="status">Подключение…</div>
+        <div class="board" id="board"></div>
+
+        <!-- общая панель рисования -->
+        <div style="position:relative; border:2px solid rgba(255,255,255,.2); border-radius:12px; background:rgba(255,255,255,.04); overflow:hidden;">
+          <canvas id="doodleCanvas" width="400" height="240" style="width:100%; height:auto; display:block;"></canvas>
+          <div id="doodleTools" style="padding:8px; display:flex; gap:8px; align-items:center; background:rgba(0,0,0,.3);">
+            <input type="color" id="penColor" value="#4ade80" title="Цвет карандаша">
+            <button onclick="clearDoodle()" style="padding:6px 14px; font-size:.9em;">Стереть всё</button>
+            <span style="font-size:.8em; color:#aaa;">Рисуют все вместе</span>
+          </div>
         </div>
-      </div>
-      <div class="doodle-panel">
-        <h3 id="oppPanelTitle">Рисунки соперника</h3>
-        <canvas id="doodleOpp" width="280" height="160"></canvas>
-      </div>
-    </div>
 
-    <div class="chat-container">
-      <div class="chat-messages" id="chatMessages"></div>
-      <div class="chat-input">
-        <input type="text" id="chatInput" placeholder="Сообщение…" maxlength="200">
-        <button onclick="sendChat()">Отправить</button>
+        <button onclick="newGame()">Новая игра</button>
+        <div id="link" style="font-size:.8em; opacity:.7; word-break:break-all; text-align:center;"></div>
+      </div>
+
+      <!-- ПРАВАЯ КОЛОНКА: чат -->
+      <div class="chat-container" style="display:flex; flex-direction:column; height:100%; min-height:300px;">
+        <div class="chat-messages" id="chatMessages" style="flex:1; padding:12px; overflow-y:auto; min-height:150px; display:flex; flex-direction:column; gap:6px;"></div>
+        <div class="chat-input" style="padding:8px; display:flex; gap:8px;">
+          <input type="text" id="chatInput" placeholder="Сообщение…" maxlength="200" style="flex:1; padding:8px; border:none; border-radius:8px; background:rgba(255,255,255,.06); color:#eee; outline:none;">
+          <button onclick="sendChat()" style="padding:8px 16px; background:#4ade80; color:#10231a;">Отправить</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- кошка -->
-  <div id="catWrap">
-    <svg id="cat" width="170" height="130" viewBox="0 0 170 130">
+  <!-- кошка внизу слева -->
+  <div id="catWrap" style="position:fixed; bottom:20px; left:20px; z-index:10;">
+    <svg id="cat" width="170" height="130" viewBox="0 0 170 130" style="display:block;">
       <g id="catBody">
-        <path id="tail" d="M112,85 Q150,92 148,108" stroke="#111" stroke-width="9"
-              fill="none" stroke-linecap="round"/>
+        <!-- хвост -->
+        <path id="tail" d="M112,85 Q150,92 148,108" stroke="#111" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <!-- уши (теперь точно по координатам) -->
         <polygon points="35,35 48,5 62,32" fill="#111"/>
         <polygon points="115,35 102,5 88,32" fill="#111"/>
+        <!-- голова -->
         <ellipse cx="85" cy="55" rx="45" ry="40" fill="#111"/>
+        <!-- глаза -->
         <g id="eyeL">
           <circle cx="65" cy="50" r="13" fill="#fff"/>
           <circle class="pupil" cx="65" cy="50" r="5.5" fill="#ffd54a"/>
@@ -169,13 +66,14 @@
           <circle cx="105" cy="50" r="13" fill="#fff"/>
           <circle class="pupil" cx="105" cy="50" r="5.5" fill="#ffd54a"/>
         </g>
-        <path id="winkLine" d="M98,50 q7,6 14,0" stroke="#fff" stroke-width="3"
-              fill="none" stroke-linecap="round"/>
+        <!-- линия подмигивания -->
+        <path id="winkLine" d="M98,50 q7,6 14,0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- брови и злая морда -->
         <line class="brow" x1="55" y1="35" x2="74" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
         <line class="brow" x1="115" y1="35" x2="96" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
-        <path id="angryMouth" d="M73,78 L79,73 L85,78 L91,73 L97,78" stroke="#e94560"
-              stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path id="angryMouth" d="M73,78 L79,73 L85,78 L91,73 L97,78" stroke="#e94560" stroke-width="2.5" fill="none" stroke-linecap="round"/>
         <polygon points="85,66 80,72 90,72" fill="#e94560"/>
+        <!-- усы -->
         <line x1="72" y1="72" x2="30" y2="66" stroke="#999" stroke-width="1.5"/>
         <line x1="72" y1="76" x2="32" y2="80" stroke="#999" stroke-width="1.5"/>
         <line x1="98" y1="72" x2="140" y2="66" stroke="#999" stroke-width="1.5"/>
@@ -184,391 +82,371 @@
     </svg>
   </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyC6E6NkQ8wr3SjZJmtWLqgnbwAFukDqfDg",
-  authDomain: "regina-10159.firebaseapp.com",
-  databaseURL: "https://regina-10159-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "regina-10159",
-  storageBucket: "regina-10159.firebasestorage.app",
-  messagingSenderId: "135727435934",
-  appId: "1:135727435934:web:474051f773d864ab1eeb8f"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6E6NkQ8wr3SjZJmtWLqgnbwAFukDqfDg",
+      authDomain: "regina-10159.firebaseapp.com",
+      databaseURL: "https://regina-10159-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "regina-10159",
+      storageBucket: "regina-10159.firebasestorage.app",
+      messagingSenderId: "135727435934",
+      appId: "1:135727435934:web:474051f773d864ab1eeb8f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-const winnerLines = [
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6]
-];
+    const winnerLines = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
 
-const url = new URL(location.href);
-let roomId = url.searchParams.get("room");
-const myId = Math.random().toString(36).slice(2);
-let myRole = null;      // 'host' | 'guest'
-let mySymbol = null;    // 'X' | 'O'
-let myNick = "";
+    const url = new URL(location.href);
+    let roomId = url.searchParams.get("room");
+    const myId = Math.random().toString(36).slice(2);
+    let myRole = null;      // 'host' | 'guest'
+    let mySymbol = null;    // 'X' | 'O'
+    let myNick = "";
 
-const statusEl = document.getElementById("status");
-const boardEl = document.getElementById("board");
-const cells = [];
-for (let i = 0; i < 9; i++) {
-  const c = document.createElement("div");
-  c.className = "cell";
-  c.onclick = () => move(i);
-  boardEl.appendChild(c);
-  cells.push(c);
-}
+    const statusEl = document.getElementById("status");
+    const boardEl = document.getElementById("board");
+    const cells = ;
+    for (let i = 0; i < 9; i++) {
+      const c = document.createElement("div");
+      c.className = "cell";
+      c.onclick = () => move(i);
+      boardEl.appendChild(c);
+      cells.push(c);
+    }
 
-/* ---------- экран входа ---------- */
-function selectSymbol(sym) {
-  mySymbol = sym;
-  localStorage.setItem("symbol", sym);
-  document.getElementById("btnX").classList.toggle("selected", sym === "X");
-  document.getElementById("btnO").classList.toggle("selected", sym === "O");
-}
+    /* ---------- экран входа ---------- */
+    function selectSymbol(sym) {
+      mySymbol = sym;
+      localStorage.setItem("symbol", sym);
+      document.getElementById("btnX").classList.toggle("selected", sym === "X");
+      document.getElementById("btnO").classList.toggle("selected", sym === "O");
+    }
 
-document.getElementById("playBtn").onclick = () => {
-  const nick = document.getElementById("nickInput").value.trim();
-  if (!mySymbol) { statusEl.textContent = "Сначала выберите значок ✕ или ⭕"; return; }
-  myNick = nick || "Игрок";
-  localStorage.setItem("nick", myNick);
-  document.getElementById("setup").style.display = "none";
-  document.getElementById("game").style.display = "flex";
-  join();
-};
+    document.getElementById("playBtn").onclick = () => {
+      const nick = document.getElementById("nickInput").value.trim();
+      if (!mySymbol) { statusEl.textContent = "Сначала выберите значок ✕ или ⭕"; return; }
+      myNick = nick || "Игрок";
+      localStorage.setItem("nick", myNick);
+      document.getElementById("setup").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      join();
+    };
 
-(function restore() {
-  const savedNick = localStorage.getItem("nick");
-  if (savedNick) document.getElementById("nickInput").value = savedNick;
-  const savedSym = localStorage.getItem("symbol");
-  if (savedSym) selectSymbol(savedSym);
-})();
+    (function restore() {
+      const savedNick = localStorage.getItem("nick");
+      if (savedNick) document.getElementById("nickInput").value = savedNick;
+      const savedSym = localStorage.getItem("symbol");
+      if (savedSym) selectSymbol(savedSym);
+    })();
 
-/* ---------- подключение к комнате ---------- */
-async function join() {
-  if (!roomId) {
-    roomId = Math.random().toString(36).slice(2, 10);
-    history.replaceState(null, "", "?room=" + roomId);
-  }
-  const ref = db.ref("games/" + roomId);
-  let snap;
-  try {
-    snap = await ref.get();
-  } catch (e) {
-    statusEl.textContent = "Ошибка подключения: " + e.code + " — " + e.message;
-    console.error(e);
-    return;
-  }
+    /* ---------- подключение к комнате ---------- */
+    async function join() {
+      if (!roomId) {
+        roomId = Math.random().toString(36).slice(2, 10);
+        history.replaceState(null, "", "?room=" + roomId);
+      }
+      const ref = db.ref("games/" + roomId);
+      let snap;
+      try {
+        snap = await ref.get();
+      } catch (e) {
+        statusEl.textContent = "Ошибка подключения: " + e.code + " — " + e.message;
+        console.error(e);
+        return;
+      }
 
-  if (!snap.exists()) {
-    try {
-      await ref.set({
-        board: Array(9).fill(""), turn: "X", started: Date.now(),
-        players: { host: { id: myId, nick: myNick, symbol: mySymbol } }
+      if (!snap.exists()) {
+        try {
+          await ref.set({
+            board: Array(9).fill(""), turn: "X", started: Date.now(),
+            players: { host: { id: myId, nick: myNick, symbol: mySymbol } }
+          });
+        } catch (e) {
+          statusEl.textContent = "Не удалось создать игру: " + e.code;
+          console.error(e);
+          return;
+        }
+        myRole = "host";
+      } else {
+        const players = snap.val().players || {};
+        const host = players.host || {}, guest = players.guest || {};
+        if (host.id && host.id !== myId && guest.id && guest.id !== myId) {
+          statusEl.textContent = "Комната уже занята: в игре два игрока 🙂";
+          return;
+        }
+        if (!host.id) {
+          let sym = mySymbol;
+          if (guest.symbol === sym) sym = sym === "X" ? "O" : "X";
+          await ref.child("players/host").set({ id: myId, nick: myNick, symbol: sym });
+          mySymbol = sym;
+          myRole = "host";
+        } else if (!guest.id) {
+          let sym = mySymbol;
+          if (host.symbol === sym) sym = sym === "X" ? "O" : "X";
+          await ref.child("players/guest").set({ id: myId, nick: myNick, symbol: sym });
+          mySymbol = sym;
+          myRole = "guest";
+        } else {
+          myRole = (host.id === myId) ? "host" : "guest";
+        }
+      }
+      localStorage.setItem("symbol", mySymbol);
+
+      document.getElementById("link").textContent = "Ссылка для друга: " + location.href;
+      document.title = "Комната " + roomId;
+      ref.on("value", onState);
+    }
+
+    /* ---------- отрисовка состояния ---------- */
+    function onState(snap) {
+      const g = snap.val();
+      if (!g) return;
+
+      // доска
+      const board = Array.isArray(g.board) ? g.board : Array(9).fill("");
+      const winner = getWinner(board);
+      cells.forEach((c, i) => {
+        c.textContent = board[i];
+        c.className = "cell" + (board[i] === "X" ? " x" : board[i] === "O" ? " o" : "")
+                    + (winner && winner.line.includes(i) ? " win" : "");
+        const busy = board[i] !== "" || winner;
+        c.style.cursor = (busy || !myRole || g.turn !== mySymbol) ? "default" : "pointer";
       });
-    } catch (e) {
-      statusEl.textContent = "Не удалось создать игру: " + e.code;
-      console.error(e);
-      return;
+
+      // строка игроков
+      const p = g.players || {};
+      const host = p.host || {}, guest = p.guest || {};
+      const me  = (myRole === "host") ? host : guest;
+      const opp = (myRole === "host") ? guest : host;
+      const line = ;
+      if (me.nick)  line.push((me.symbol === "X" ? "✕ " : "⭕ ") + me.nick);
+      if (opp.nick) line.push((opp.symbol === "X" ? "✕ " : "⭕ ") + opp.nick);
+      document.getElementById("playersLine").textContent = line.join("   ·   ");
+
+      if (winner) {
+        statusEl.textContent = winner.who === "draw"
+          ? "Ничья! Сыграем ещё раз?"
+          : (winner.who === "X" ? "Победили крестики! 🎉" : "Победили нолики! 🎉");
+      } else if (g.turn === mySymbol) {
+        statusEl.textContent = "Ваш ход";
+      } else {
+        statusEl.textContent = "Ход соперника…";
+      }
+
+      // рисование: общая панель, все штрихи видны всегда
+      const ctx = document.getElementById("doodleCanvas").getContext("2d");
+      const strokes = g.doodle?.strokes || ;
+      ctx.clearRect(0, 0, 400, 240);
+      strokes.forEach(s => drawStroke(ctx, s));
+
+      // чат
+      const chatEl = document.getElementById("chatMessages");
+      chatEl.innerHTML = "";
+      (g.chat || ).forEach(m => {
+        const div = document.createElement("div");
+        div.className = "msg " + (m.id === myId ? "me" : "opp");
+        const nick = document.createElement("span");
+        nick.className = "nick";
+        nick.textContent = (m.nick || "Игрок") + ":";
+        div.appendChild(nick);
+        div.appendChild(document.createTextNode(m.text));
+        chatEl.appendChild(div);
+      });
+      chatEl.scrollTop = chatEl.scrollHeight;
     }
-    myRole = "host";
-  } else {
-    const players = snap.val().players || {};
-    const host = players.host || {}, guest = players.guest || {};
-    if (host.id && host.id !== myId && guest.id && guest.id !== myId) {
-      statusEl.textContent = "Комната уже занята: в игре два игрока 🙂";
-      return;
+
+    function drawStroke(ctx, s) {
+      if (!s || !s.pts) return;
+      const pts = Array.isArray(s.pts) ? s.pts : ;
+      if (!pts.length) return;
+      ctx.strokeStyle = s.color || "#4ade80";
+      ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(pts.x, pts.y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      if (pts.length === 1) ctx.lineTo(pts.x + .1, pts.y);
+      ctx.stroke();
     }
-    if (!host.id) {
-      let sym = mySymbol;
-      if (guest.symbol === sym) sym = sym === "X" ? "O" : "X";
-      await ref.child("players/host").set({ id: myId, nick: myNick, symbol: sym });
-      mySymbol = sym;
-      myRole = "host";
-    } else if (!guest.id) {
-      let sym = mySymbol;
-      if (host.symbol === sym) sym = sym === "X" ? "O" : "X";
-      await ref.child("players/guest").set({ id: myId, nick: myNick, symbol: sym });
-      mySymbol = sym;
-      myRole = "guest";
-    } else {
-      myRole = (host.id === myId) ? "host" : "guest";
+
+    function getWinner(board) {
+      for (const [a, b, c] of winnerLines) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c])
+          return { who: board[a], line: [a, b, c] };
+      }
+      if (board.every(Boolean)) return { who: "draw", line:  };
+      return null;
     }
-  }
-  localStorage.setItem("symbol", mySymbol);
 
-  document.getElementById("link").textContent = "Ссылка для друга: " + location.href;
-  document.title = "Комната " + roomId;
-  ref.on("value", onState);
-}
+    function move(i) {
+      if (!myRole) return;
+      const ref = db.ref("games/" + roomId);
+      ref.get().then(snap => {
+        const g = snap.val();
+        if (!g) return;
+        const board = Array.isArray(g.board) ? g.board : Array(9).fill("");
+        if (board[i] !== "" || g.turn !== mySymbol) return;
+        if (getWinner(board)) return;
+        board[i] = g.turn;
+        const w = getWinner(board);
+        ref.update({ board, turn: w ? g.turn : (g.turn === "X" ? "O" : "X") });
+      });
+    }
 
-/* ---------- отрисовка состояния ---------- */
-function onState(snap) {
-  const g = snap.val();
-  if (!g) return;
+    function newGame() {
+      db.ref("games/" + roomId).update({ board: Array(9).fill(""), turn: "X" });
+    }
 
-  // доска
-  const board = Array.isArray(g.board) ? g.board : Array(9).fill("");
-  const winner = getWinner(board);
-  cells.forEach((c, i) => {
-    c.textContent = board[i];
-    c.className = "cell" + (board[i] === "X" ? " x" : board[i] === "O" ? " o" : "")
-                + (winner && winner.line.includes(i) ? " win" : "");
-    const busy = board[i] !== "" || winner;
-    c.style.cursor = (busy || !myRole || g.turn !== mySymbol) ? "default" : "pointer";
-  });
+    /* ---------- рисование (общая панель) ---------- */
+    const canvas = document.getElementById("doodleCanvas");
+    const ctx = canvas.getContext("2d");
+    const penColor = document.getElementById("penColor");
+    let drawing = false;
+    let currentPath = ;
 
-  // строка игроков
-  const p = g.players || {};
-  const host = p.host || {}, guest = p.guest || {};
-  const me  = (myRole === "host") ? host : guest;
-  const opp = (myRole === "host") ? guest : host;
-  const line = [];
-  if (me.nick)  line.push((me.symbol === "X" ? "✕ " : "⭕ ") + me.nick);
-  if (opp.nick) line.push((opp.symbol === "X" ? "✕ " : "⭕ ") + opp.nick);
-  document.getElementById("playersLine").textContent = line.join("   ·   ");
-  document.getElementById("myPanelTitle").textContent = "Рисунки: " + (me.nick || "я");
-  document.getElementById("oppPanelTitle").textContent = "Рисунки: " + (opp.nick || "соперник");
+    function doodlePos(e) {
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches : e;
+      return [(t.clientX - r.left) * (canvas.width / r.width),
+              (t.clientY - r.top) * (canvas.height / r.height)];
+    }
 
-  if (winner) {
-    statusEl.textContent = winner.who === "draw"
-      ? "Ничья! Сыграем ещё раз?"
-      : (winner.who === "X" ? "Победили крестики! 🎉" : "Победили нолики! 🎉");
-  } else if (g.turn === mySymbol) {
-    statusEl.textContent = "Ваш ход";
-  } else {
-    statusEl.textContent = "Ход соперника…";
-  }
+    function doodleStart(e) {
+      e.preventDefault();
+      if (!myRole) return;
+      drawing = true;
+      const [x, y] = doodlePos(e);
+      currentPath = [{ x, y }];
+    }
 
-  // рисунки: свои и соперника (включая «живую» незаконченную линию)
-  if (myRole) {
-    const d = g.doodle || {};
-    const myKey  = myRole;
-    const oppKey = myRole === "host" ? "guest" : "host";
-    const myD  = d[myKey]  || {};
-    const oppD = d[oppKey] || {};
+    function doodleMove(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const [x, y] = doodlePos(e);
+      currentPath.push({ x, y });
+      ctx.strokeStyle = penColor.value;
+      ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(currentPath[currentPath.length - 2].x, currentPath[currentPath.length - 2].y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      if (currentPath.length % 5 === 0) {
+        db.ref("games/" + roomId + "/doodle/strokes").push({ color: penColor.value, pts: currentPath });
+        currentPath = ; // отправляем частями, чтобы не перегружать
+      }
+    }
 
-    const ctxMe  = document.getElementById("doodleMe").getContext("2d");
-    const ctxOpp = document.getElementById("doodleOpp").getContext("2d");
-    ctxMe.clearRect(0, 0, 280, 160);
-    ctxOpp.clearRect(0, 0, 280, 160);
+    function doodleEnd() {
+      if (drawing && currentPath.length) {
+        db.ref("games/" + roomId + "/doodle/strokes").push({ color: penColor.value, pts: currentPath });
+      }
+      drawing = false;
+      currentPath = ;
+    }
 
-    toList(myD.strokes).forEach(s => drawStroke(ctxMe, s));
-    toList(oppD.strokes).forEach(s => drawStroke(ctxOpp, s));
-    // незаконченную линию рисуем только на панели соперника — своя и так видна
-    if (oppD.live) drawStroke(ctxOpp, oppD.live);
-  }
+    canvas.addEventListener("mousedown", doodleStart);
+    canvas.addEventListener("mousemove", doodleMove);
+    canvas.addEventListener("mouseup", doodleEnd);
+    canvas.addEventListener("mouseleave", doodleEnd);
+    canvas.addEventListener("touchstart", doodleStart);
+    canvas.addEventListener("touchmove", doodleMove);
+    canvas.addEventListener("touchend", doodleEnd);
 
-  // чат
-  const chatEl = document.getElementById("chatMessages");
-  chatEl.innerHTML = "";
-  toList(g.chat).forEach(m => {
-    const div = document.createElement("div");
-    div.className = "msg " + (m.id === myId ? "me" : "opp");
-    const nick = document.createElement("span");
-    nick.className = "nick";
-    nick.textContent = (m.nick || "Игрок") + ":";
-    div.appendChild(nick);
-    div.appendChild(document.createTextNode(m.text));
-    chatEl.appendChild(div);
-  });
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
+    function clearDoodle() {
+      db.ref("games/" + roomId + "/doodle").set(null);
+    }
 
-function toList(v) {
-  if (!v) return [];
-  return Array.isArray(v) ? v.filter(Boolean) : Object.values(v);
-}
+    /* ---------- чат ---------- */
+    function sendChat() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text || !roomId) return;
+      db.ref("games/" + roomId + "/chat").push({ id: myId, nick: myNick, text });
+      input.value = "";
+    }
+    document.getElementById("chatInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") sendChat();
+    });
 
-function drawStroke(ctx, s) {
-  if (!s || !s.pts) return;
-  const pts = toList(s.pts);
-  if (!pts.length) return;
-  ctx.strokeStyle = s.color || "#4ade80";
-  ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-  if (pts.length === 1) ctx.lineTo(pts[0].x + .1, pts[0].y);
-  ctx.stroke();
-}
+    /* ---------- кошка ---------- */
+    const cat = document.getElementById("cat");
+    const catWrap = document.getElementById("catWrap");
+    const pupilL = document.querySelector("#eyeL .pupil");
+    const pupilR = document.querySelector("#eyeR .pupil");
+    const MAX = 6;
+    let petCount = 0;
+    let angryUntil = 0;
+    let winkSide = "right";
 
-function getWinner(board) {
-  for (const [a, b, c] of winnerLines) {
-    if (board[a] && board[a] === board[b] && board[a] === board[c])
-      return { who: board[a], line: [a, b, c] };
-  }
-  if (board.every(Boolean)) return { who: "draw", line: [] };
-  return null;
-}
+    function spawnEmoji(cls, emoji, count) {
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement("div");
+        el.className = cls;
+        el.textContent = emoji;
+        el.style.left = (85 + (Math.random() * 130 - 65)) + "px";
+        el.style.top = (10 + Math.random() * 40) + "px";
+        el.style.animationDelay = (Math.random() * .3) + "s";
+        catWrap.appendChild(el);
+        setTimeout(() => el.remove(), 1600);
+      }
+    }
 
-function move(i) {
-  if (!myRole) return;
-  const ref = db.ref("games/" + roomId);
-  ref.get().then(snap => {
-    const g = snap.val();
-    if (!g) return;
-    const board = Array.isArray(g.board) ? g.board : Array(9).fill("");
-    if (board[i] !== "" || g.turn !== mySymbol) return;
-    if (getWinner(board)) return;
-    board[i] = g.turn;
-    const w = getWinner(board);
-    ref.update({ board, turn: w ? g.turn : (g.turn === "X" ? "O" : "X") });
-  });
-}
+    function wink() {
+      const cls = "wink-" + winkSide;
+      cat.classList.add(cls);
+      setTimeout(() => cat.classList.remove(cls), 700);
+      winkSide = winkSide === "right" ? "left" : "right";
+    }
 
-function newGame() {
-  db.ref("games/" + roomId).update({ board: Array(9).fill(""), turn: "X" });
-}
+    cat.addEventListener("click", () => {
+      if (Date.now() < angryUntil) return;
+      petCount++;
+      if (petCount < 3) {
+        wink();
+        spawnEmoji("heart", "❤️", 5);
+      } else {
+        angryUntil = Date.now() + 5000;
+        petCount = 0;
+        cat.classList.add("angry");
+        document.getElementById("tail").setAttribute("d", "M128,60 Q172,48 160,10");
+        spawnEmoji("anger", "💢", 6);
+        setTimeout(() => {
+          cat.classList.remove("angry");
+          document.getElementById("tail").setAttribute("d", "M122,85 Q160,92 158,108");
+        }, 5000);
+      }
+    });
 
-/* ---------- рисование (синхронно) ---------- */
-const doodleMe = document.getElementById("doodleMe");
-const ctxMe = doodleMe.getContext("2d");
-const penColor = document.getElementById("penColor");
-let drawing = false;
-let currentPath = [];
+    document.addEventListener("mousemove", e => {
+      const r = cat.getBoundingClientRect();
+      const eyes = [
+        { el: pupilL, fx: 65 / 170, fy: 50 / 130 },
+        { el: pupilR, fx: 105 / 170, fy: 50 / 130 }
+      ];
+      eyes.forEach(({ el, fx, fy }) => {
+        const cx = r.left + r.width * fx, cy = r.top + r.height * fy;
+        const dx = e.clientX - cx, dy = e.clientY - cy;
+        const dist = Math.hypot(dx, dy) || 1;
+        const k = Math.min(MAX, dist / 20);
+        el.setAttribute("transform", `translate(${(dx / dist) * k} ${(dy / dist) * k})`);
+      });
+    });
 
-function myKey() { return myRole || "guest"; }
-function doodleRef() { return db.ref("games/" + roomId + "/doodle/" + myKey()); }
-
-function doodlePos(e) {
-  const r = doodleMe.getBoundingClientRect();
-  const t = e.touches ? e.touches[0] : e;
-  return [(t.clientX - r.left) * (doodleMe.width / r.width),
-          (t.clientY - r.top) * (doodleMe.height / r.height)];
-}
-function doodleStart(e) {
-  e.preventDefault();
-  if (!myRole) return;
-  drawing = true;
-  const [x, y] = doodlePos(e);
-  currentPath = [{ x, y }];
-}
-function doodleMove(e) {
-  if (!drawing) return;
-  e.preventDefault();
-  const [x, y] = doodlePos(e);
-  currentPath.push({ x, y });
-  ctxMe.strokeStyle = penColor.value;
-  ctxMe.lineWidth = 3; ctxMe.lineCap = "round"; ctxMe.lineJoin = "round";
-  ctxMe.beginPath();
-  ctxMe.moveTo(currentPath[currentPath.length - 2].x, currentPath[currentPath.length - 2].y);
-  ctxMe.lineTo(x, y);
-  ctxMe.stroke();
-  if (currentPath.length % 5 === 0) {
-    doodleRef().child("live").set({ color: penColor.value, pts: currentPath });
-  }
-}
-function doodleEnd() {
-  if (drawing && currentPath.length) {
-    doodleRef().child("strokes").push({ color: penColor.value, pts: currentPath });
-    doodleRef().child("live").set(null);
-  }
-  drawing = false;
-  currentPath = [];
-}
-doodleMe.addEventListener("mousedown", doodleStart);
-doodleMe.addEventListener("mousemove", doodleMove);
-doodleMe.addEventListener("mouseup", doodleEnd);
-doodleMe.addEventListener("mouseleave", doodleEnd);
-doodleMe.addEventListener("touchstart", doodleStart);
-doodleMe.addEventListener("touchmove", doodleMove);
-doodleMe.addEventListener("touchend", doodleEnd);
-
-function clearDoodle() {
-  doodleRef().set(null);
-}
-
-/* ---------- чат ---------- */
-function sendChat() {
-  const input = document.getElementById("chatInput");
-  const text = input.value.trim();
-  if (!text || !roomId) return;
-  db.ref("games/" + roomId + "/chat").push({ id: myId, nick: myNick, text });
-  input.value = "";
-}
-document.getElementById("chatInput").addEventListener("keydown", e => {
-  if (e.key === "Enter") sendChat();
-});
-
-/* ---------- кошка ---------- */
-const cat = document.getElementById("cat");
-const catWrap = document.getElementById("catWrap");
-const pupilL = document.querySelector("#eyeL .pupil");
-const pupilR = document.querySelector("#eyeR .pupil");
-const MAX = 6;
-let petCount = 0;
-let angryUntil = 0;
-let winkSide = "right";
-
-function spawnEmoji(cls, emoji, count) {
-  for (let i = 0; i < count; i++) {
-    const el = document.createElement("div");
-    el.className = cls;
-    el.textContent = emoji;
-    el.style.left = (85 + (Math.random() * 130 - 65)) + "px";
-    el.style.top = (10 + Math.random() * 40) + "px";
-    el.style.animationDelay = (Math.random() * .3) + "s";
-    catWrap.appendChild(el);
-    setTimeout(() => el.remove(), 1600);
-  }
-}
-
-function wink() {
-  const cls = "wink-" + winkSide;
-  cat.classList.add(cls);
-  setTimeout(() => cat.classList.remove(cls), 700);
-  winkSide = winkSide === "right" ? "left" : "right";
-}
-
-cat.addEventListener("click", () => {
-  if (Date.now() < angryUntil) return;
-  petCount++;
-  if (petCount < 3) {
-    wink();
-    spawnEmoji("heart", "❤️", 5);
-  } else {
-    angryUntil = Date.now() + 5000;
-    petCount = 0;
-    cat.classList.add("angry");
-    document.getElementById("tail").setAttribute("d", "M128,60 Q172,48 160,10");
-    spawnEmoji("anger", "💢", 6);
-    setTimeout(() => {
-      cat.classList.remove("angry");
-      document.getElementById("tail").setAttribute("d", "M122,85 Q160,92 158,108");
-    }, 5000);
-  }
-});
-
-// зрачки следят за курсором; на телефоне бродят сами
-document.addEventListener("mousemove", e => {
-  const r = cat.getBoundingClientRect();
-  const eyes = [
-    { el: pupilL, fx: 65 / 170, fy: 50 / 130 },
-    { el: pupilR, fx: 105 / 170, fy: 50 / 130 }
-  ];
-  eyes.forEach(({ el, fx, fy }) => {
-    const cx = r.left + r.width * fx, cy = r.top + r.height * fy;
-    const dx = e.clientX - cx, dy = e.clientY - cy;
-    const dist = Math.hypot(dx, dy) || 1;
-    const k = Math.min(MAX, dist / 20);
-    el.setAttribute("transform", `translate(${(dx / dist) * k} ${(dy / dist) * k})`);
-  });
-});
-
-let t = 0;
-setInterval(() => {
-  if (matchMedia("(hover: none)").matches) {
-    t += 0.15;
-    const px = Math.cos(t) * MAX, py = Math.sin(t * 1.3) * MAX * .5;
-    pupilL.setAttribute("transform", `translate(${px} ${py})`);
-    pupilR.setAttribute("transform", `translate(${px} ${py})`);
-  }
-}, 50);
-</script>
+    let t = 0;
+    setInterval(() => {
+      if (matchMedia("(hover: none)").matches) {
+        t += 0.15;
+        const px = Math.cos(t) * MAX, py = Math.sin(t * 1.3) * MAX * .5;
+        pupilL.setAttribute("transform", `translate(${px} ${py})`);
+        pupilR.setAttribute("transform", `translate(${px} ${py})`);
+      }
+    }, 50);
+  </script>
 </body>
 </html>
