@@ -11,7 +11,7 @@
     min-height: 100vh;
     display: flex; flex-direction: column; align-items: center;
     background: linear-gradient(135deg, #1a1a2e, #16213e);
-    color: #eee; gap: 14px; padding: 16px 16px 140px;
+    color: #eee; gap: 14px; padding: 16px 16px 200px;
   }
   h1 { font-size: 1.4em; }
   .status { min-height: 1.5em; font-size: 1.1em; text-align: center; }
@@ -55,7 +55,7 @@
 
   /* --- панель рисования --- */
   #doodleBox {
-    position: relative; border: 2px solid rgba(255,255,255,.2);
+    border: 2px solid rgba(255,255,255,.2);
     border-radius: 12px; background: rgba(255,255,255,.04); overflow: hidden;
   }
   #doodleCanvas { width: 100%; height: auto; display: block; touch-action: none; cursor: crosshair; }
@@ -81,29 +81,15 @@
     background: rgba(255,255,255,.06); color: #eee; outline: none; }
   .chat-input button { background: #4ade80; color: #10231a; padding: 8px 16px; }
 
-  /* --- кошка --- */
+  /* --- кошка: картинка + видео-анимации --- */
   #catWrap { position: fixed; bottom: 20px; left: 20px; z-index: 10; }
-  #cat { cursor: pointer; user-select: none; display: block; }
-  #catBody { transform-box: view-box; transform-origin: 85px 55px; transition: transform .5s; }
-  #cat.angry #catBody { transform: scaleX(-1); animation: shake .3s infinite; }
-  @keyframes shake {
-    0%, 100% { transform: scaleX(-1) rotate(0deg); }
-    50%      { transform: scaleX(-1) rotate(3deg); }
+  #cat {
+    width: 170px; height: auto; display: block;
+    cursor: pointer; user-select: none;
   }
-  .brow, #angryMouth, #winkLineL, #winkLineR { visibility: hidden; }
-  #cat.angry .brow, #cat.angry #angryMouth { visibility: visible; }
-  #cat.angry .pupil { fill: #ff5252; }
-  #cat.wink-left  #eyeL { visibility: hidden; }
-  #cat.wink-left  #winkLineL { visibility: visible; }
-  #cat.wink-right #eyeR { visibility: hidden; }
-  #cat.wink-right #winkLineR { visibility: visible; }
-  .heart, .anger {
-    position: absolute; font-size: 20px; pointer-events: none;
-    animation: floatUp 1.2s ease-out forwards;
-  }
-  @keyframes floatUp {
-    from { opacity: 1; transform: translateY(0) scale(.5) rotate(0deg); }
-    to   { opacity: 0; transform: translateY(-70px) scale(1.4) rotate(15deg); }
+  #catVideo {
+    width: 170px; height: auto; display: none;
+    border-radius: 12px;
   }
 </style>
 </head>
@@ -131,7 +117,6 @@
         <div class="board" id="board"></div>
         <button onclick="newGame()">Новая игра</button>
 
-        <!-- общая панель рисования -->
         <div id="doodleBox" style="width:100%; max-width:520px;">
           <canvas id="doodleCanvas" width="500" height="260"></canvas>
           <div id="doodleTools">
@@ -156,41 +141,10 @@
     </div>
   </div>
 
-  <!-- кошка -->
+  <!-- кошка: картинка + видео-анимации -->
   <div id="catWrap">
-    <svg id="cat" width="170" height="130" viewBox="0 0 170 130">
-      <g id="catBody">
-        <!-- хвост: свёрнут калачиком -->
-        <path id="tail" d="M118,85 Q156,92 154,108" stroke="#111" stroke-width="9" fill="none" stroke-linecap="round"/>
-        <!-- уши -->
-        <polygon points="35,35 48,5 62,32" fill="#111"/>
-        <polygon points="115,35 102,5 88,32" fill="#111"/>
-        <!-- голова -->
-        <ellipse cx="85" cy="55" rx="45" ry="40" fill="#111"/>
-        <!-- глаза -->
-        <g id="eyeL">
-          <circle cx="65" cy="50" r="13" fill="#fff"/>
-          <circle class="pupil" cx="65" cy="50" r="5.5" fill="#ffd54a"/>
-        </g>
-        <g id="eyeR">
-          <circle cx="105" cy="50" r="13" fill="#fff"/>
-          <circle class="pupil" cx="105" cy="50" r="5.5" fill="#ffd54a"/>
-        </g>
-        <!-- закрытые глаза (по одному на каждую сторону) -->
-        <path id="winkLineL" d="M58,50 q7,6 14,0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path id="winkLineR" d="M98,50 q7,6 14,0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <!-- сердитые брови и рот -->
-        <line class="brow" x1="55" y1="35" x2="74" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
-        <line class="brow" x1="115" y1="35" x2="96" y2="42" stroke="#e94560" stroke-width="3" stroke-linecap="round"/>
-        <path id="angryMouth" d="M73,78 L79,73 L85,78 L91,73 L97,78" stroke="#e94560" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <!-- нос и усы -->
-        <polygon points="85,66 80,72 90,72" fill="#e94560"/>
-        <line x1="72" y1="72" x2="30" y2="66" stroke="#999" stroke-width="1.5"/>
-        <line x1="72" y1="76" x2="32" y2="80" stroke="#999" stroke-width="1.5"/>
-        <line x1="98" y1="72" x2="140" y2="66" stroke="#999" stroke-width="1.5"/>
-        <line x1="98" y1="76" x2="138" y2="80" stroke="#999" stroke-width="1.5"/>
-      </g>
-    </svg>
+    <img id="cat" src="0.jpeg" alt="Кошка">
+    <video id="catVideo" playsinline></video>
   </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -355,7 +309,7 @@ function onState(snap) {
     statusEl.textContent = "Ход соперника…";
   }
 
-  // общая панель рисования: сохранённые штрихи + незаконченные линии всех игроков
+  // общая панель рисования
   const d = g.doodle || {};
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -464,7 +418,6 @@ function doodleMove(e) {
   const p = doodlePos(e);
   currentPath.push({ x: p[0], y: p[1] });
 
-  // рисуем локально — чтобы линия была плавной без ожидания базы
   const prev = currentPath[currentPath.length - 2];
   ctx.strokeStyle = penColor.value;
   ctx.lineWidth = 3;
@@ -475,7 +428,6 @@ function doodleMove(e) {
   ctx.lineTo(p[0], p[1]);
   ctx.stroke();
 
-  // каждые 5 точек показываем сопернику «живую» линию
   if (currentPath.length % 5 === 0) {
     liveRef().set({ color: penColor.value, pts: currentPath });
   }
@@ -483,7 +435,6 @@ function doodleMove(e) {
 
 function doodleEnd() {
   if (drawing && currentPath.length) {
-    // штрих сохраняется навсегда — рисунок больше не пропадает
     strokesRef().push({ color: penColor.value, pts: currentPath });
     liveRef().set(null);
   }
@@ -515,83 +466,37 @@ document.getElementById("chatInput").addEventListener("keydown", e => {
   if (e.key === "Enter") sendChat();
 });
 
-/* ---------- кошка ---------- */
-const cat = document.getElementById("cat");
-const catWrap = document.getElementById("catWrap");
-const pupilL = document.querySelector("#eyeL .pupil");
-const pupilR = document.querySelector("#eyeR .pupil");
-const MAX = 6;
+/* ---------- кошка: клики запускают видео ---------- */
+const catImg = document.getElementById("cat");
+const catVideo = document.getElementById("catVideo");
 let petCount = 0;
-let angryUntil = 0;
-let winkSide = "left";
 
-function spawnEmoji(cls, emoji, count) {
-  for (let i = 0; i < count; i++) {
-    const el = document.createElement("div");
-    el.className = cls;
-    el.textContent = emoji;
-    el.style.left = (85 + (Math.random() * 130 - 65)) + "px";
-    el.style.top = (10 + Math.random() * 40) + "px";
-    el.style.animationDelay = (Math.random() * 0.3) + "s";
-    catWrap.appendChild(el);
-    setTimeout(() => el.remove(), 1600);
-  }
-}
-
-function wink() {
-  const cls = "wink-" + winkSide;
-  cat.classList.add(cls);
-  setTimeout(() => cat.classList.remove(cls), 700);
-  winkSide = (winkSide === "left") ? "right" : "left";
-}
-
-cat.addEventListener("click", () => {
-  if (Date.now() < angryUntil) return;
+catImg.addEventListener("click", () => {
   petCount++;
-  if (petCount < 3) {
-    wink();
-    spawnEmoji("heart", "❤️", 5);
-  } else {
-    angryUntil = Date.now() + 5000;
-    petCount = 0;
-    cat.classList.add("angry");
-    document.getElementById("tail").setAttribute("d", "M128,60 Q168,45 156,10");
-    spawnEmoji("anger", "💢", 6);
-    setTimeout(() => {
-      cat.classList.remove("angry");
-      document.getElementById("tail").setAttribute("d", "M118,85 Q156,92 154,108");
-    }, 5000);
-  }
+  // до трёх кликов включительно — 1.mp4, начиная с четвёртого — 2.mp4
+  playCat(petCount > 3 ? "2.mp4" : "1.mp4");
+  if (petCount > 3) petCount = 0; // после «злой» анимации счёт начинается заново
 });
 
-// зрачки следят за курсором; на телефоне бродят сами
-document.addEventListener("mousemove", e => {
-  const r = cat.getBoundingClientRect();
-  const eyes = [
-    { el: pupilL, fx: 65 / 170, fy: 50 / 130 },
-    { el: pupilR, fx: 105 / 170, fy: 50 / 130 }
-  ];
-  eyes.forEach(eye => {
-    const cx = r.left + r.width * eye.fx;
-    const cy = r.top + r.height * eye.fy;
-    const dx = e.clientX - cx;
-    const dy = e.clientY - cy;
-    const dist = Math.hypot(dx, dy) || 1;
-    const k = Math.min(MAX, dist / 20);
-    eye.el.setAttribute("transform", "translate(" + (dx / dist) * k + " " + (dy / dist) * k + ")");
+function playCat(src) {
+  catImg.style.display = "none";
+  catVideo.src = src;
+  catVideo.style.display = "block";
+  catVideo.play().catch(() => {
+    // если браузер запретил автозапуск — вернём картинку
+    endCatVideo();
   });
-});
+}
 
-let t = 0;
-setInterval(() => {
-  if (matchMedia("(hover: none)").matches) {
-    t += 0.15;
-    const px = Math.cos(t) * MAX;
-    const py = Math.sin(t * 1.3) * MAX * 0.5;
-    pupilL.setAttribute("transform", "translate(" + px + " " + py + ")");
-    pupilR.setAttribute("transform", "translate(" + px + " " + py + ")");
-  }
-}, 50);
+function endCatVideo() {
+  catVideo.pause();
+  catVideo.removeAttribute("src");
+  catVideo.load();
+  catVideo.style.display = "none";
+  catImg.style.display = "block";
+}
+
+catVideo.addEventListener("ended", endCatVideo);
 </script>
 </body>
 </html>
